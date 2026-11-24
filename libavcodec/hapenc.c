@@ -24,7 +24,7 @@
  * @file
  * Hap encoder
  *
- * Fourcc: Hap1, Hap5, HapY
+ * Fourcc: Hap1, Hap5, HapY, Hap7
  *
  * https://github.com/Vidvox/hap/blob/master/documentation/HapVideoDRAFT.md
  */
@@ -271,6 +271,12 @@ static av_cold int hap_init(AVCodecContext *avctx)
         avctx->bits_per_coded_sample = 24;
         ctx->enc.tex_funct = dxtc.dxt5ys_block;
         break;
+    case HAP_FMT_BC7:
+        ctx->enc.tex_ratio = 16;
+        avctx->codec_tag = MKTAG('H', 'a', 'p', '7');
+        avctx->bits_per_coded_sample = 32;
+        ctx->enc.tex_funct = dxtc.bc7_block;
+        break;
     default:
         av_log(avctx, AV_LOG_ERROR, "Invalid format %02X\n", ctx->opt_tex_fmt);
         return AVERROR_INVALIDDATA;
@@ -335,6 +341,7 @@ static const AVOption options[] = {
         { "hap",       "Hap 1 (DXT1 textures)", 0, AV_OPT_TYPE_CONST, { .i64 = HAP_FMT_RGBDXT1   }, 0, 0, FLAGS, .unit = "format" },
         { "hap_alpha", "Hap Alpha (DXT5 textures)", 0, AV_OPT_TYPE_CONST, { .i64 = HAP_FMT_RGBADXT5  }, 0, 0, FLAGS, .unit = "format" },
         { "hap_q",     "Hap Q (DXT5-YCoCg textures)", 0, AV_OPT_TYPE_CONST, { .i64 = HAP_FMT_YCOCGDXT5 }, 0, 0, FLAGS, .unit = "format" },
+        { "hap_r",     "Hap R (BC7 textures, test encoder)", 0, AV_OPT_TYPE_CONST, { .i64 = HAP_FMT_BC7 }, 0, 0, FLAGS, .unit = "format" },
     { "chunks", "chunk count", OFFSET(opt_chunk_count), AV_OPT_TYPE_INT, {.i64 = 1 }, 1, HAP_MAX_CHUNKS, FLAGS, },
     { "compressor", "second-stage compressor", OFFSET(opt_compressor), AV_OPT_TYPE_INT, { .i64 = HAP_COMP_SNAPPY }, HAP_COMP_NONE, HAP_COMP_SNAPPY, FLAGS, .unit = "compressor" },
         { "none",       "None", 0, AV_OPT_TYPE_CONST, { .i64 = HAP_COMP_NONE }, 0, 0, FLAGS, .unit = "compressor" },

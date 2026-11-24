@@ -31,6 +31,7 @@
 #include "libavutil/intreadwrite.h"
 
 #include "texturedsp.h"
+#include "hapbc7enc.h"
 
 static const uint8_t expand5[32] = {
       0,   8,  16,  24,  33,  41,  49,  57,  66,  74,  82,  90,
@@ -652,6 +653,7 @@ av_cold void ff_texturedspenc_init(TextureDSPEncContext *c)
     c->dxt1_block         = dxt1_block;
     c->dxt5_block         = dxt5_block;
     c->dxt5ys_block       = dxt5ys_block;
+    c->bc7_block         = ff_hap_bc7_encode_block;
 }
 
 #define TEXTUREDSP_FUNC_NAME ff_texturedsp_exec_compress_threads
