@@ -26,7 +26,7 @@
  * @file
  * Hap decoder
  *
- * Fourcc: Hap1, Hap5, HapY, HapA, HapM
+ * Fourcc: Hap1, Hap5, Hap7, HapY, HapA, HapM
  *
  * https://github.com/Vidvox/hap/blob/master/documentation/HapVideoDRAFT.md
  */
@@ -43,6 +43,17 @@
 #include "snappy.h"
 #include "texturedsp.h"
 #include "thread.h"
+
+/* MIT-licensed BC7 reference decoder, see hap_bcdec.h. */
+#define BCDECDEF static inline
+#define BCDEC_IMPLEMENTATION
+#include "hap_bcdec.h"
+
+static int hap_bc7_block(uint8_t *dst, ptrdiff_t stride, const uint8_t *block)
+{
+    bcdec_bc7(block, dst, (int)stride);
+    return 16;
+}
 
 static int hap_parse_decode_instructions(HapContext *ctx, int size)
 {
@@ -143,6 +154,7 @@ static int hap_parse_frame_header(AVCodecContext *avctx)
 
     if ((avctx->codec_tag == MKTAG('H','a','p','1') && (section_type & 0x0F) != HAP_FMT_RGBDXT1) ||
         (avctx->codec_tag == MKTAG('H','a','p','5') && (section_type & 0x0F) != HAP_FMT_RGBADXT5) ||
+        (avctx->codec_tag == MKTAG('H','a','p','7') && (section_type & 0x0F) != HAP_FMT_BC7) ||
         (avctx->codec_tag == MKTAG('H','a','p','Y') && (section_type & 0x0F) != HAP_FMT_YCOCGDXT5) ||
         (avctx->codec_tag == MKTAG('H','a','p','A') && (section_type & 0x0F) != HAP_FMT_RGTC1) ||
         ((avctx->codec_tag == MKTAG('H','a','p','M') && (section_type & 0x0F) != HAP_FMT_RGTC1) &&
@@ -375,6 +387,12 @@ static av_cold int hap_init(AVCodecContext *avctx)
         ctx->dec[0].tex_funct = dxtc.dxt5_block;
         avctx->pix_fmt = AV_PIX_FMT_RGBA;
         break;
+    case MKTAG('H','a','p','7'):
+        texture_name = "BC7";
+        ctx->dec[0].tex_ratio = 16;
+        ctx->dec[0].tex_funct = hap_bc7_block;
+        avctx->pix_fmt = AV_PIX_FMT_RGBA;
+        break;
     case MKTAG('H','a','p','Y'):
         texture_name = "DXT5-YCoCg-scaled";
         ctx->dec[0].tex_ratio = 16;
@@ -432,6 +450,7 @@ const FFCodec ff_hap_decoder = {
     .codec_tags     = (const uint32_t []){
         MKTAG('H','a','p','1'),
         MKTAG('H','a','p','5'),
+        MKTAG('H','a','p','7'),
         MKTAG('H','a','p','Y'),
         MKTAG('H','a','p','A'),
         MKTAG('H','a','p','M'),
